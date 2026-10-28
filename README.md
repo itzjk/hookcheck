@@ -70,6 +70,10 @@ Yes. Use a local file that FFmpeg can decode, with a known duration up to ten mi
 
 The verdict identifies editing signals, not a predicted swipe percentage. Compare the suggested opening against your original using your platform analytics.
 
+**Can a frame strip overwrite my video?**
+
+`--strip` rejects the input path and any symbolic or hard link to the input. An existing, separate strip file is replaced only after the new PNG is saved successfully.
+
 ## Limitations
 
 - Camera shake and flashes count as motion; a still image can still be a strong hook.

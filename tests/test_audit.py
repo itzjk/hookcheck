@@ -1,6 +1,7 @@
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -8,6 +9,8 @@ import unittest
 from unittest.mock import patch
 
 from hookcheck.audit import audit
+from hookcheck.media import write_strip
+from PIL import Image
 
 
 class AuditTests(unittest.TestCase):
@@ -105,6 +108,101 @@ class AuditTests(unittest.TestCase):
             self.run_audit(corrupt)
         with patch("hookcheck.media.shutil.which", return_value=None), self.assertRaisesRegex(ValueError, "required"):
             self.run_audit(self.static)
+
+    def test_cli_rejects_strip_aliases_without_changing_input(self):
+        env = dict(os.environ, HOOKCHECK_PROVIDER="none")
+        for alias in ("same_path", "symlink", "hardlink", "symlink_to_hardlink"):
+            for json_output in (False, True):
+                with self.subTest(alias=alias, json=json_output), tempfile.TemporaryDirectory() as folder:
+                    source = Path(folder) / "video.mp4"
+                    shutil.copyfile(self.moving, source)
+                    before = source.read_bytes()
+                    strip = Path(folder) / "strip.png"
+                    if alias == "same_path":
+                        strip = source
+                    elif alias == "symlink":
+                        strip.symlink_to(source)
+                    elif alias == "hardlink":
+                        os.link(source, strip)
+                    else:
+                        link = Path(folder) / "linked.mp4"
+                        os.link(source, link)
+                        strip.symlink_to(link)
+                    args = [sys.executable, "-m", "hookcheck", str(source), "--strip", str(strip)]
+                    result = subprocess.run(args + (["--json"] if json_output else []),
+                                            env=env, capture_output=True, text=True)
+                    self.assertEqual(source.read_bytes(), before, "The input video was changed")
+                    self.assertEqual(strip.read_bytes(), before)
+                    self.assertEqual(result.returncode, 2, result.stderr)
+                    if json_output:
+                        self.assertIn("overwrite", json.loads(result.stdout)["error"])
+                        self.assertEqual(result.stderr, "")
+                    else:
+                        self.assertEqual(result.stdout, "")
+                        self.assertIn("overwrite", result.stderr)
+                    self.assertNotIn("Traceback", result.stderr)
+
+    def test_strip_link_created_during_audit_cannot_modify_input(self):
+        with tempfile.TemporaryDirectory() as folder:
+            source = Path(folder) / "video.mp4"
+            shutil.copyfile(self.moving, source)
+            before = source.read_bytes()
+            strip = Path(folder) / "strip.png"
+
+            def link_during_analysis(frames, candidate, provider):
+                os.link(source, strip)
+                return {"status": "disabled"}
+
+            with patch("hookcheck.audit.analyze", side_effect=link_during_analysis):
+                self.run_audit(source, strip=strip)
+            self.assertEqual(source.read_bytes(), before)
+            self.assertFalse(source.samefile(strip))
+            with Image.open(strip) as picture:
+                self.assertEqual(picture.format, "PNG")
+                picture.load()
+
+    def test_strip_save_failure_preserves_existing_output_and_cleans_tempfile(self):
+        with tempfile.TemporaryDirectory() as folder:
+            strip = Path(folder) / "strip.png"
+            Image.new("RGB", (1, 1)).save(strip)
+            before = strip.read_bytes()
+
+            def fail_after_partial_write(canvas, output, **kwargs):
+                if isinstance(output, Path):
+                    output.write_bytes(b"partial PNG")
+                else:
+                    output.write(b"partial PNG")
+                raise OSError("disk full")
+
+            with patch.object(Image.Image, "save", fail_after_partial_write):
+                with self.assertRaisesRegex(OSError, "disk full"):
+                    write_strip([], strip)
+            self.assertEqual(strip.read_bytes(), before)
+            self.assertEqual(list(Path(folder).iterdir()), [strip])
+
+    def test_strip_parent_symlink_changed_during_audit_cannot_modify_input(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            inputs, outputs = root / "inputs", root / "outputs"
+            inputs.mkdir()
+            outputs.mkdir()
+            source = inputs / "video.mp4"
+            shutil.copyfile(self.moving, source)
+            before = source.read_bytes()
+            parent = root / "linked-parent"
+            parent.symlink_to(outputs, target_is_directory=True)
+
+            def retarget_during_analysis(frames, candidate, provider):
+                parent.unlink()
+                parent.symlink_to(inputs, target_is_directory=True)
+                return {"status": "disabled"}
+
+            with patch("hookcheck.audit.analyze", side_effect=retarget_during_analysis):
+                self.run_audit(source, strip=parent / source.name)
+            self.assertEqual(source.read_bytes(), before)
+            with Image.open(outputs / source.name) as picture:
+                self.assertEqual(picture.format, "PNG")
+                picture.load()
 
     def test_fake_vision_changes_semantic_verdict_and_receives_frames(self):
         seen = []

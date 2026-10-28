@@ -16,6 +16,8 @@ python -m unittest discover -s tests -v
 
 Tests generate MP4s with stationary and moving footage, delayed action, a single black first frame, silence, delayed audio and stream offsets. They assert risk direction, candidate timestamps, cut and onset times, JPEG inputs to fake vision, JSON/PNG CLI output and graceful failure. HTTP tests cover provider payloads, loopback transport, cloud rejection, redirects and HTTP 200 error bodies. Inverting the high/low verdict must fail the static/moving regression test.
 
+Strip-output regressions check identical paths, symbolic links, hard links and symbolic links to hard links in both text and JSON modes. Rejected outputs must leave the input bytes unchanged and return exit code 2. Additional tests create a hard link or retarget a parent-directory symbolic link during analysis and simulate a partial PNG write; the input and any previous output must survive, with no temporary files left behind.
+
 CI runs the suite on push and pull request with Python 3.9 and 3.13. A separate Python 3.9 job checks editable installation with pip 21.2.4. Metadata lives in `pyproject.toml`; `setup.py` supports older editable installers. The build requirement stays below setuptools 80 because its legacy develop command delegates to pip inside an isolated build environment.
 
 ## Reproduce the examples

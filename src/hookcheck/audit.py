@@ -63,8 +63,10 @@ def audit(video, strip=None, vision_provider=None):
     path = Path(video).expanduser().resolve()
     if not path.is_file():
         raise ValueError("Video file does not exist or is not a regular file.")
-    if strip is not None and Path(strip).expanduser().resolve() == path:
-        raise ValueError("The strip output must not overwrite the input video.")
+    if strip is not None:
+        strip = Path(strip).expanduser().resolve()
+        if strip == path or (strip.exists() and strip.samefile(path)):
+            raise ValueError("The strip output must not overwrite the input video.")
     info = probe(path)
     frames = [extract(path, stamp, info["video_stream_index"]) for stamp in (0.0, 0.5, 1.0, 1.5)
               if stamp < info["duration_s"]]
@@ -82,7 +84,7 @@ def audit(video, strip=None, vision_provider=None):
     vision = analyze(frames, candidate, vision_provider)
     risk, reasons, fixes = verdict(measurements, vision)
     if strip is not None:
-        write_strip(frames + candidate, Path(strip).expanduser())
+        write_strip(frames + candidate, strip)
     return {"schema_version": 1, "version": __version__, "video": path.name, "media": info,
             "risk": risk, "risk_basis": "heuristic_with_vision" if vision["status"] == "inferred" else "measurements_only",
             "reasons": reasons, "fixes": fixes, "measurements": measurements, "vision": vision, "ocr": text,

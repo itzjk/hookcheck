@@ -150,4 +150,12 @@ def write_strip(frames, path):
         picture.thumbnail((width, height - 32))
         canvas.paste(picture, (index * width + (width - picture.width) // 2, 30 + (height - 32 - picture.height) // 2))
         draw.text((index * width + 10, 10), f"{frame.time_s:.3f}s", fill="white")
-    canvas.save(path, format="PNG")
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(dir=path.parent, prefix=".hookcheck-", suffix=".png", delete=False) as output:
+            temporary = Path(output.name)
+            canvas.save(output, format="PNG")
+        temporary.replace(path)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
