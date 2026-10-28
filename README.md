@@ -114,6 +114,8 @@ In a Python virtual environment, install the checkout:
 python -m pip install .
 ```
 
+For editable development, use `python -m pip install -e .`. Both installation modes support pip 21.2.4 on Python 3.9; upgrading pip is not required. Package metadata stays in `pyproject.toml`, with `setup.py` providing compatibility for older editable installers. The build dependency is bounded to setuptools 64-79 to support both legacy editable installation and modern editable wheels; [setuptools 80 changed the legacy develop command](https://setuptools.pypa.io/en/stable/history.html#v80-0-0). This bound applies only to the isolated build environment.
+
 Run all tests with one command:
 
 ```sh
@@ -122,7 +124,7 @@ python -m unittest discover -s tests -v
 
 Tests generate real MP4s with FFmpeg: stationary versus moving footage, delayed action, a single black first frame, silent audio, delayed audio and stream offsets. They assert the risk direction, candidate timestamp, cut and onset times, actual JPEG inputs to fake vision, JSON/PNG CLI output, and graceful failure. HTTP tests check the three provider payloads, local transport, cloud rejection, redirects and HTTP 200 error bodies. Inverting the high/low verdict makes the static/moving regression test fail.
 
-CI runs the suite on every push and pull request with Python 3.9 and 3.13, installing system FFmpeg. The tests require an FFmpeg build with the `libx264` encoder. For optional local OCR, install Tesseract separately. Live OCR was not exercised when producing the demo reports.
+CI runs the suite on every push and pull request with Python 3.9 and 3.13, installing system FFmpeg. A separate job installs in editable mode with pip 21.2.4 on Python 3.9 to catch legacy installer regressions. The tests require an FFmpeg build with the `libx264` encoder. For optional local OCR, install Tesseract separately. Live OCR was not exercised when producing the demo reports.
 
 Regenerate the synthetic videos and comparison GIF:
 

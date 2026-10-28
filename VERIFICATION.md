@@ -19,6 +19,21 @@ A separate source snapshot was committed into a temporary repository, then clone
 
 The verdict rule was temporarily mutated to swap high and low. `test_real_video_static_vs_motion_verdict` failed with `AssertionError: 'low' != 'high'`. The rule was restored before the clean installation checks.
 
+## Legacy editable installation regression
+
+Rechecked October 27, 2026 from a committed source snapshot cloned into a fresh directory, using Python 3.9.6 and pip 21.2.4 without upgrading pip.
+
+- Before the fix, `python -m pip install -e .` exited 1 because pip 21.2.4 could not install an editable pyproject-only checkout.
+- Adding `setup.py` alone still failed: setuptools 80's develop command delegated to pip inside the isolated build environment, where pip was unavailable. The build requirement is now `setuptools>=64,<80`; metadata remains in `pyproject.toml`.
+- `python -m pip install -e .`: exit 0 in a fresh virtual environment with pip 21.2.4. The installed command returned `hookcheck 0.1.0`.
+- `python -m unittest discover -s tests -v`: 15 tests passed after the legacy editable installation, measured 4.859 seconds.
+- The same editable installation succeeded with pip 26.0.1 using modern editable wheels; all 15 tests passed, measured 5.192 seconds.
+- All 8 README shell blocks: exit 0, including `pipx install .`, `uvx --from . hookcheck examples/action-first.mp4`, normal pip installation, tests, JSON/PNG output and demo regeneration. Tool data and caches were isolated in temporary directories.
+- The normal pip installation's test run passed all 15 tests, measured 4.119 seconds. Regenerated reports matched the supplied reports exactly. Both example MP4s decoded fully with FFmpeg and `-xerror`, exit 0.
+- Inverting the verdict in the temporary clone made the static/moving regression test fail with `AssertionError: 'low' != 'high'`. After restoring the rule, all 15 tests passed, measured 3.132 seconds.
+
+CI now includes a dedicated Python 3.9 / pip 21.2.4 editable-install job that runs the installed CLI and the full test suite. Hosted execution remains unverified until the workflow runs.
+
 ## Coverage limits
 
 Vision adapters were checked using fake responses and an actual loopback HTTP server. Live OpenAI, Anthropic and Ollama model inference was not exercised. Tesseract was unavailable, so real OCR quality is unverified. Hosted GitHub Actions has not run; the workflow is supplied for pushes and pull requests.
