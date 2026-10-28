@@ -1,41 +1,49 @@
 # Verification
 
-Checked October 27, 2026 with Python 3.9.6, FFmpeg 9.0.2 and Pillow 11.3.0.
+Checked October 27, 2026 with Python 3.9.6, FFmpeg 9.0.2 and Pillow 11.3.0. This revision changes documentation and demo assets; the package code, tests, metadata and workflows are unchanged.
 
-## Executed
+## Clean installation and README commands
 
-A separate source snapshot was committed into a temporary repository, then cloned into a clean directory. Every shell block in the README was executed there with isolated pipx and uv locations.
+An isolated pipx installation fetched `git+https://github.com/itzjk/hookcheck` at commit `9027e1ab1c2ce47ba476637f942b2fd8f7d0aa19`. Commands ran from a new temporary directory, with the delayed-action fixture copied there as `video.mp4`.
 
-- `pipx install .`: exit 0.
-- `uvx --from . hookcheck examples/action-first.mp4`: exit 0.
-- `python -m pip install .`: exit 0 in a fresh virtual environment.
-- `python -m unittest discover -s tests -v`: 15 tests passed, measured 4.054 seconds.
-- All 8 README shell blocks: exit 0, including JSON, strip generation and example regeneration.
-- JSON output parsed successfully; the delayed example proposed `3.000s`.
-- Regenerated plain-text demo reports matched the supplied reports exactly.
-- Both example MP4s: full video and audio decode with FFmpeg and `-xerror`, exit 0.
-- Comparison GIF: all 48 frames decoded successfully.
-- Both PNG strips were visually inspected.
+| Command | Observed result |
+| --- | --- |
+| `pipx install git+https://github.com/itzjk/hookcheck` | Exit 0; installed version 0.1.0 |
+| `hookcheck video.mp4` | Exit 0; HIGH risk, first cut and alternative at 3.000s |
+| `hookcheck video.mp4 --json` | Exit 0; valid JSON, high risk, provider none |
+| `hookcheck video.mp4 --strip opening.png` | Exit 0; PNG strip created |
+| `hookcheck video.mp4 --json --strip opening.png > report.json` | Exit 0; JSON and PNG created |
+| `hookcheck --help` | Exit 0; options displayed |
+| `hookcheck --version` | Exit 0; hookcheck 0.1.0 |
 
-The verdict rule was temporarily mutated to swap high and low. `test_real_video_static_vs_motion_verdict` failed with `AssertionError: 'low' != 'high'`. The rule was restored before the clean installation checks.
+A separate reviewer repeated the installation and commands using only the README and development instructions. JSON parsing and PNG decoding passed. The reviewer found a stale pipx documentation link; the README now links to the working installation guide.
 
-## Legacy editable installation regression
+## Source installation and regression checks
 
-Rechecked October 27, 2026 from a committed source snapshot cloned into a fresh directory, using Python 3.9.6 and pip 21.2.4 without upgrading pip.
+A fresh source copy excluded Git state, existing environments and generated Python caches. The documented `python3 -m venv .venv`, activation, and `python -m pip install -e .` succeeded with pip 21.2.4.
 
-- Before the fix, `python -m pip install -e .` exited 1 because pip 21.2.4 could not install an editable pyproject-only checkout.
-- Adding `setup.py` alone still failed: setuptools 80's develop command delegated to pip inside the isolated build environment, where pip was unavailable. The build requirement is now `setuptools>=64,<80`; metadata remains in `pyproject.toml`.
-- `python -m pip install -e .`: exit 0 in a fresh virtual environment with pip 21.2.4. The installed command returned `hookcheck 0.1.0`.
-- `python -m unittest discover -s tests -v`: 15 tests passed after the legacy editable installation, measured 4.859 seconds.
-- The same editable installation succeeded with pip 26.0.1 using modern editable wheels; all 15 tests passed, measured 5.192 seconds.
-- All 8 README shell blocks: exit 0, including `pipx install .`, `uvx --from . hookcheck examples/action-first.mp4`, normal pip installation, tests, JSON/PNG output and demo regeneration. Tool data and caches were isolated in temporary directories.
-- The normal pip installation's test run passed all 15 tests, measured 4.119 seconds. Regenerated reports matched the supplied reports exactly. Both example MP4s decoded fully with FFmpeg and `-xerror`, exit 0.
-- Inverting the verdict in the temporary clone made the static/moving regression test fail with `AssertionError: 'low' != 'high'`. After restoring the rule, all 15 tests passed, measured 3.132 seconds.
+- `python -m unittest discover -s tests -v`: 15 tests passed, measured 4.196 seconds.
+- Independent reviewer: 15 tests passed, measured 4.466 seconds.
+- `python examples/generate.py`: exit 0. Both regenerated full reports matched the supplied reports exactly.
+- Both example MP4s decoded completely with `ffmpeg -v error -xerror -i <clip> -f null -`, exit 0.
+- `uvx --from git+https://github.com/itzjk/hookcheck hookcheck examples/action-first.mp4`: exit 0 from the clean source copy with isolated uv directories; LOW risk.
 
-CI now includes a dedicated Python 3.9 / pip 21.2.4 editable-install job that runs the installed CLI and the full test suite. Hosted execution remains unverified until the workflow runs.
+The verdict was temporarily inverted in the disposable source copy. `test_real_video_static_vs_motion_verdict` failed with `AssertionError: 'low' != 'high'`. Restoring the source made the same test pass. Package source in the working repository was never modified.
+
+## Terminal recording
+
+`docs/demo.tape` runs both example audits with vision disabled. The resulting `docs/demo.gif` contains 387 decoded frames at 1200 × 720 pixels, lasts a measured 15.48 seconds and is 257,121 bytes. Both terminal reports were visually inspected, including the final LOW verdict. `ffmpeg -v error -xerror -i docs/demo.gif -f null -` decoded the entire GIF with exit 0. The delayed report shows HIGH risk and a 3.000s alternative; the action-first report shows LOW risk.
+
+The installed VHS 0.12.1 could not launch desktop Chrome inside the execution sandbox: macOS application registration aborted the process. Recording used a temporary build of the same VHS release with its browser launcher pointed at Chrome Headless Shell 156.0.8078.73 in single-process mode. This environment adaptation lives outside the repository; it does not alter the tape, CLI, reports or frame capture. On a normal desktop, the documented command remains `vhs docs/demo.tape`. Regeneration with the unmodified VHS binary inside this sandbox remains blocked.
+
+README length: 677 whitespace-delimited words. Relative documentation links resolve, and the public-file scan found no private paths, credentials or internal project references.
+
+The independent reviewer also decoded all 387 GIF frames and inspected separately extracted HIGH and LOW reports. Both were complete and legible, with no blocking findings.
+
+## CI
+
+The existing [tests workflow run](https://github.com/itzjk/hookcheck/actions/runs/40614002786) completed successfully, verified through GitHub's API on October 27, 2026. It covers Python 3.9 and 3.13 plus legacy editable installation. This documentation revision has not been pushed.
 
 ## Coverage limits
 
-Vision adapters were checked using fake responses and an actual loopback HTTP server. Live OpenAI, Anthropic and Ollama model inference was not exercised. Tesseract was unavailable, so real OCR quality is unverified. Hosted GitHub Actions has not run; the workflow is supplied for pushes and pull requests.
-
-The examples are synthetic illustrations with a test tone. They verify processing and risk direction, not audience behavior. There is no calibration against a public retention dataset. Sound onset does not verify speech onset.
+Vision adapters use fake responses and a real loopback HTTP server in tests. Live Anthropic, OpenAI and Ollama inference remains unverified. Tesseract was unavailable, so live OCR quality remains unverified. The synthetic examples verify processing and risk direction; they do not establish audience outcomes or speech onset.
