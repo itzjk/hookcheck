@@ -9,6 +9,7 @@ description = "Audit the actual opening frames of Shorts, Reels and TikToks for 
 readme = "README.md"
 requires-python = ">=3.9"
 license = {text = "MIT"}
+authors = [{name = "ZERACK", email = "189363748+itzjk@users.noreply.github.com"}]
 keywords = ["youtube-shorts", "tiktok", "reels", "video", "retention", "creator-tools", "ffmpeg", "llm", "vision", "cli"]
 dependencies = ["Pillow>=10.4,<13"]
 classifiers = ["Environment :: Console", "Programming Language :: Python :: 3", "Topic :: Multimedia :: Video"]

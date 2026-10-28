@@ -2,11 +2,13 @@
 
 **Will viewers swipe your Short in the first second?** Audit the actual opening frames of Shorts, Reels and TikToks, then get a risk verdict and concrete edits to try.
 
-Requires **Python 3.9+**, [pipx](https://pipx.pypa.io/stable/installation/) and **ffmpeg 5+ / ffprobe** on `PATH`. From this clone, install in one command:
+Requires **Python 3.9+**, [pipx](https://pipx.pypa.io/stable/installation/) and **ffmpeg 5+ / ffprobe** on `PATH`. Install in one command:
 
 ```sh
-pipx install .
+pipx install git+https://github.com/itzjk/hookcheck
 ```
+
+(From a clone, `pipx install .` does the same.)
 
 Then audit a video:
 
@@ -47,13 +49,13 @@ hookcheck examples/delayed-action.mp4 --json --strip opening.png > report.json
 
 JSON includes `schema_version`, `risk`, `risk_basis`, `reasons`, `fixes`, `measurements`, `vision`, `ocr`, `frames`, and measured `elapsed_s`. Missing measurements are `null`. Exit status is `0` for a report, including high risk or unavailable vision, and `2` for invalid input or a processing failure. `--json` errors also use JSON.
 
-For an isolated run from a clone with [uv](https://docs.astral.sh/uv/):
+For a one-off run without installing, with [uv](https://docs.astral.sh/uv/):
 
 ```sh
-uvx --from . hookcheck examples/action-first.mp4
+uvx --from git+https://github.com/itzjk/hookcheck hookcheck video.mp4
 ```
 
-This project has not been published to PyPI. `pipx install hookcheck` and bare `uvx hookcheck` are not release instructions yet. The commands above install this checkout.
+Not on PyPI yet, so `pipx install hookcheck` (without the URL) does not work.
 
 ## Add vision
 
