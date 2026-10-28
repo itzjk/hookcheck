@@ -1,0 +1,17 @@
+LOW swipe risk | action-first.mp4
+Basis: measurements_only (editing heuristic, not a swipe prediction)
+
+  Visual activity is present from the opening.
+
+Measured:
+  Opening motion (0-1.5s): 0.0289 (0-1 pixel difference)
+  First frame: visible detail
+  First detected cut: none detected
+  First sound: 0.000s (speech not verified)
+  OCR: unavailable
+
+Vision: none / disabled
+  No vision provider selected; measurements only.
+
+Edits to try:
+  1. Keep frame zero active and readable; validate it with stayed-to-watch analytics.

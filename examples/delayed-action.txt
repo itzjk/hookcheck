@@ -1,0 +1,17 @@
+HIGH swipe risk | delayed-action.mp4
+Basis: measurements_only (editing heuristic, not a swipe prediction)
+
+  The opening barely changes across the first 1.5 seconds.
+
+Measured:
+  Opening motion (0-1.5s): 0.0000 (0-1 pixel difference)
+  First frame: visible detail
+  First detected cut: 3.000s
+  First sound: 0.000s (speech not verified)
+  OCR: unavailable
+
+Vision: none / disabled
+  No vision provider selected; measurements only.
+
+Edits to try:
+  1. Try starting at 3.000s, where a later 0.5s window has more visual activity. This is a motion-based candidate, not a verified story beat. Check sentence continuity before cutting.
